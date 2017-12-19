@@ -28,8 +28,8 @@ module Spree
     def create_options
       # This calculator knows that it needs two CustomizableOptions, width & height
       [
-       CustomizableProductOption.create(name: "width", presentation: "Width"),
-       CustomizableProductOption.create(name: "height", presentation: "Height")
+       CustomizableProductOption.create(name: "width", presentation: "Width", data_type: "float"),
+       CustomizableProductOption.create(name: "height", presentation: "Height", data_type: "float")
       ]
     end
 
@@ -40,7 +40,7 @@ module Spree
       width,height = get_option(product_customization, "width"), get_option(product_customization, "height")
 
       # here's the custom logic for this calculator:  min total width + height = 20.
-      [(width.value.to_f * height.value.to_f), (preferred_min_pricing_area || 0)].max * (preferred_multiplier || 0)
+      [(width.get_value_for_type.to_f * height.get_value_for_type.to_f), (preferred_min_pricing_area || 0)].max * (preferred_multiplier || 0)
     end
 
     def valid_configuration?(product_customization)
@@ -57,7 +57,7 @@ module Spree
       #    return has_inputs && width && height && (width.value.to_f * height.value.to_f) >= preferred_min_area
 
       #    rescue false
-      !width.value.nil? || !height.value.nil?
+      !width.get_value_for_type.nil? || !height.get_value_for_type.nil?
     end
 
 

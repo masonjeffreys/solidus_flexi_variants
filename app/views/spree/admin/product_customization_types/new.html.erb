@@ -1,6 +1,5 @@
-<% content_for :page_title do %>
-  <%=Spree.t(:new_product_customization_type) %>
-<% end %>
+<% admin_breadcrumb link_to(plural_resource_name(Spree::ProductCustomizationType), spree.admin_product_customization_types_path) %>
+<% admin_breadcrumb Spree.t('new_product_customization_type') %>
 
 <%= render 'spree/shared/error_messages', target: @product_customization_type  %>
 

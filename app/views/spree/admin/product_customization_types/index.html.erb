@@ -1,7 +1,11 @@
-<% content_for(:page_title, Spree.t("product_customization_types")) %>
-<% content_for(:page_actions) do %>
-  <%= button_link_to Spree.t("new_product_customization_type"), spree.new_admin_product_customization_type_url, class: 'btn-success', icon: 'add', id: 'new_product_customization_type_link' %>
-<% end %>
+<% admin_layout "full-width" %>
+<% admin_breadcrumb(plural_resource_name(Spree::ProductCustomizationType)) %>
+
+<% content_for :page_actions do %>
+  <li>
+    <%= link_to Spree.t('new_product_customization_type'), spree.new_admin_product_customization_type_url, class: 'btn btn-primary' %>
+  </li>
+<% end if can?(:create, Spree::ProductCustomizationType) %>
 
 <% if @product_customization_types.any? %>
   <table class="table" id='product_customization_types' data-hook>
@@ -10,6 +14,7 @@
         <th><%= Spree.t("name") %></th>
         <th><%= Spree.t("presentation") %></th>
         <th><%= Spree.t("description") %></th>
+        <th><%= Spree.t("calculator") %></th>
         <th class="actions"></th>
       </tr>
     </thead>
@@ -19,6 +24,7 @@
           <td class='name'><%= product_customization_type.name %></td>
           <td class='presentation'><%= product_customization_type.presentation %></td>
           <td class='description'><%= product_customization_type.description %></td>
+          <td class='calculator'><%= product_customization_type.calculator.class.name.demodulize %></td>
           <td class="actions actions-2 text-right">
             <%= link_to_edit(product_customization_type, no_text: true, class: 'admin_edit_product_customization_type') %>
             <%= link_to_delete(product_customization_type, no_text: true) %>

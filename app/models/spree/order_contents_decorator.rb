@@ -12,7 +12,19 @@ Spree::OrderContents.class_eval do
     )
 
     line_item.quantity += quantity.to_i
-    line_item.options = ActionController::Parameters.new(options).permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    puts "----- Inside OrderContents class_eval flexi variants"
+    puts "options are #{options}"
+
+    ###### HACK FOR FIXING .with_indifferent_access is undefined
+    options2 = {}
+    options2['ad_hoc_option_values'] = options['ad_hoc_option_values'] if options['ad_hoc_option_values']
+    options2['product_customizations'] = options['product_customizations'] if options['product_customizations']
+    options2['customization_price'] = options['customization_price'] if options['customization_price']
+    ######
+
+    if options2 != {}
+      line_item.options = ActionController::Parameters.new(options2).permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    end
 
     unless options.empty?
       product_customizations_values = options[:product_customizations] || []
@@ -32,7 +44,7 @@ Spree::OrderContents.class_eval do
 
       line_item.price = variant.price_in(order.currency).amount + offset_price
     end
-
+    
     if Spree.solidus_version < '2.5' && line_item.new_record?
       create_order_stock_locations(line_item, options[:stock_location_quantities])
     end
