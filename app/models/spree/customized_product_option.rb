@@ -10,7 +10,7 @@ module Spree
     mount_uploader :customization_image, CustomizationImageUploader
 
     def empty?
-      value.blank? && !customization_image? && json_value.blank? && integer_value.blank? && boolean_value.blank? && float_value.blank? && datetime_value.blank? 
+      value.blank? && !customization_image? && json_value.blank? && integer_value.blank? && boolean_value == nil && float_value.blank? && datetime_value.blank? 
     end
 
     # alternative set method

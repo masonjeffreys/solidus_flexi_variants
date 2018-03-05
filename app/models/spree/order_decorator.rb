@@ -4,24 +4,26 @@ Spree::Order.class_eval do
   # produces a list of [customizable_product_option.id,value] pairs for subsequent comparison
   def customization_pairs(product_customizations)
     pairs = product_customizations.map(&:customized_product_options).flatten.map do |m|
-      [m.customizable_product_option.id, m.value.present? ? m.value : m.customization_image.to_s ]
+      [m.customizable_product_option.id, m.get_value_for_type]
     end
 
     Set.new pairs
   end
 
   def product_customizations_match(line_item, options)
+    
     existing_customizations = line_item.product_customizations
     new_customizations = options[:product_customizations]
 
     return true if existing_customizations.empty? && new_customizations.empty?
 
+    # require that the customization types be the same for the new and existing
     return false unless existing_customizations.pluck(:product_customization_type_id).sort == new_customizations.pluck(:product_customization_type_id).sort
 
     existing_vals = customization_pairs(existing_customizations)
     new_vals = customization_pairs(new_customizations)
 
-    # do a set-compare here
+    # do a set-compare here to require that the values of each customized_product_option are the same
     existing_vals == new_vals
   end
 
