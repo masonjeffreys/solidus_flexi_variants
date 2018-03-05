@@ -1,5 +1,3 @@
-
-
 Spree::OrderContents.class_eval do
 
   private
@@ -20,7 +18,12 @@ Spree::OrderContents.class_eval do
     ######
 
     line_item.quantity += quantity.to_i
-    line_item.options = standard_options.permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    if standard_options.class == ActionController::Parameters
+      line_item.options = standard_options.permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    else
+      line_item.options = ActionController::Parameters.new(standard_options).permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    end
+    
 
     ####### This line is added to make solidus_flexi_variants save customizations
     if product_customizations_values != nil || ad_hoc_option_value_ids != nil
