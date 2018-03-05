@@ -1,9 +1,11 @@
+
+
 Spree::OrderContents.class_eval do
 
   private
-  #this whole thing needs a refactor!
 
   def add_to_line_item(variant, quantity, options = {})
+    ### overrides existing Spree::OrderContents private method
     line_item = grab_line_item_by_variant(variant, false, options)
 
     line_item ||= order.line_items.new(
@@ -11,40 +13,21 @@ Spree::OrderContents.class_eval do
       variant: variant,
     )
 
-    line_item.quantity += quantity.to_i
-    puts "----- Inside OrderContents class_eval flexi variants"
-    puts "options are #{options}"
-
-    ###### HACK FOR FIXING .with_indifferent_access is undefined
-    options2 = {}
-    options2['ad_hoc_option_values'] = options['ad_hoc_option_values'] if options['ad_hoc_option_values']
-    options2['product_customizations'] = options['product_customizations'] if options['product_customizations']
-    options2['customization_price'] = options['customization_price'] if options['customization_price']
+    #### separate options to standard, product_customizations, and add_hoc_option_values
+    product_customizations_values = options[:product_customizations]
+    ad_hoc_option_value_ids = options[:ad_hoc_option_values]
+    standard_options = options.except(:product_customizations, :ad_hoc_option_values)
     ######
 
-    if options2 != {}
-      line_item.options = ActionController::Parameters.new(options2).permit(Spree::PermittedAttributes.line_item_attributes).to_h
+    line_item.quantity += quantity.to_i
+    line_item.options = standard_options.permit(Spree::PermittedAttributes.line_item_attributes).to_h
+
+    ####### This line is added to make solidus_flexi_variants save customizations
+    if product_customizations_values != nil || ad_hoc_option_value_ids != nil
+      line_item = flexi_variants(variant, line_item, product_customizations_values, ad_hoc_option_value_ids)
     end
+    ######
 
-    unless options.empty?
-      product_customizations_values = options[:product_customizations] || []
-      line_item.product_customizations = product_customizations_values
-      product_customizations_values.each { |product_customization| product_customization.line_item = line_item }
-      product_customizations_values.map(&:save) # it is now safe to save the customizations we built
-
-      # find, and add the configurations, if any.  these have not been fetched from the db yet.              line_items.first.variant_id
-      # we postponed it (performance reasons) until we actually know we needed them
-      ad_hoc_option_value_ids = ( options[:ad_hoc_option_values].present? ? options[:ad_hoc_option_values] : [] )
-      product_option_values = ad_hoc_option_value_ids.map do |cid|
-        Spree::AdHocOptionValue.find(cid) if cid.present?
-      end.compact
-      line_item.ad_hoc_option_values = product_option_values
-
-      offset_price = product_option_values.map(&:price_modifier).compact.sum + product_customizations_values.map {|product_customization| product_customization.price(variant)}.compact.sum
-
-      line_item.price = variant.price_in(order.currency).amount + offset_price
-    end
-    
     if Spree.solidus_version < '2.5' && line_item.new_record?
       create_order_stock_locations(line_item, options[:stock_location_quantities])
     end
@@ -52,6 +35,27 @@ Spree::OrderContents.class_eval do
     line_item.target_shipment = options[:shipment]
     line_item.save!
     line_item
+  end
+
+  def flexi_variants(variant, line_item, product_customizations_values, ad_hoc_option_value_ids)
+      product_customizations_values ||= []
+      ad_hoc_option_value_ids ||= []
+      customizations_offset_price = 0
+      ad_hoc_options_offset_price = 0
+
+      if product_customizations_values.count > 0
+        customizations_offset_price = line_item.add_customizations(product_customizations_values)
+      end
+
+      # find, and add the configurations, if any.  these have not been fetched from the db yet.              line_items.first.variant_id
+      # we postponed it (performance reasons) until we actually know we needed them
+      if ad_hoc_option_value_ids.count > 0
+        ad_hoc_options_offset_price = line_item.add_ad_hoc_option_values(ad_hoc_option_value_ids)
+      end
+
+      line_item.price = variant.price_in(order.currency).amount + customizations_offset_price + ad_hoc_options_offset_price
+
+      return line_item
   end
 
   # Bringing in since it was taken out of version 2.5
