@@ -62,10 +62,12 @@
       return (input - 0) == input && input.length > 0;
     }
 
-    function compute_variant_price_diff(base_price) {
+    function compute_variant_price_diff(base_price, obj) {
       var variant_price = 0;
-
-      $("#product-variants input[type='radio']:checked").each (function() {
+      if (typeof obj === "undefined"){
+        obj = document;
+      }
+      $("#product-variants input[type='radio']:checked", obj).each (function() {
         variant_price = variant_price_map[$(this).val()];
       });
 
@@ -77,11 +79,13 @@
 
     }
 
-    function compute_configuration_price() {
+    function compute_configuration_price(obj) {
       var configuration_price = 0;
-
+      if (typeof obj === "undefined"){
+        obj = document;
+      }
       // for selects or checkboxes
-      $("select.ad-hoc-option-select, input:checked.ad-hoc-option-select").each(function() {
+      $("select.ad-hoc-option-select, input:checked.ad-hoc-option-select", obj).each(function() {
         // the prompt: 'None' in the select tag yields an empty string, which I can't use in the price calcuation
         var val = $(this).val();
 
@@ -101,11 +105,14 @@
       return configuration_price;
     }
 
-    function compute_customization_price() {
+    function compute_customization_price(obj) {
       var price = 0;
+      if (typeof obj === "undefined"){
+        obj = document;
+      }
 
       // for selects or checkboxes
-      $(".customization_price").each(function() {
+      $(".customization_price", obj).each(function() {
         var val = $(this).val();
 
         if (isNumeric(val)) {
@@ -116,14 +123,18 @@
       return price;
     }
 
-    function updatePrice() {
-      var cur_variant_price_diff = compute_variant_price_diff(base_price);
-      var cur_configuration_price = compute_configuration_price();
-      var cur_customization_price = compute_customization_price();
+    function updatePrice(obj) {
+      var cur_variant_price_diff = compute_variant_price_diff(base_price, obj);
+      var cur_configuration_price = compute_configuration_price(obj);
+      var cur_customization_price = compute_customization_price(obj);
       var cur_price = base_price + cur_variant_price_diff + cur_configuration_price + cur_customization_price;
-
       var region = $.formatCurrency.getRegionFromCurrency("<%= current_pricing_options.currency %>");
-      $('.price.selling').text(cur_price.toFixed(2)).formatCurrency({region: region});
+
+      if (typeof obj !== "undefined"){
+        $('.price.selling', obj).text(cur_price.toFixed(2)).formatCurrency({region: region});
+      } else {
+        $('.price.selling').text(cur_price.toFixed(2)).formatCurrency({region: region});
+      }
     }
 
     //]]>
